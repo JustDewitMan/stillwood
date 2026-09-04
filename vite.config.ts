@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  base: '/stillwood/',
   server: {
     host: true,
     port: 5173,
@@ -22,7 +23,8 @@ export default defineConfig({
         background_color: '#1e3329',
         display: 'standalone',
         orientation: 'any',
-        start_url: '/',
+        start_url: '/stillwood/',
+        scope: '/stillwood/',
         icons: [
           {
             src: 'favicon.svg',
