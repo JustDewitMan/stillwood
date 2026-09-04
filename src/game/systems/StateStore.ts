@@ -30,7 +30,7 @@ export interface GameState {
   activity: string | null
 }
 
-const SAVE_KEY = 'stillwood-save-v1'
+const SAVE_KEY = 'stillwood-save-v2'
 
 function emptySkills(): Record<SkillId, SkillState> {
   const skills = {} as Record<SkillId, SkillState>
@@ -171,6 +171,7 @@ export class StateStore {
       this.setToast('Inventory is full')
       return false
     }
+    this.setToast(`Withdrew ${ITEMS[itemId].name}`)
     return true
   }
 
@@ -219,7 +220,7 @@ export class StateStore {
 
   load(): GameState | null {
     try {
-      const raw = localStorage.getItem(SAVE_KEY)
+      const raw = localStorage.getItem(SAVE_KEY) ?? localStorage.getItem('stillwood-save-v1')
       if (!raw) return null
       const parsed = JSON.parse(raw) as GameState
       return { ...createInitialState(), ...parsed, toast: null, activity: null }

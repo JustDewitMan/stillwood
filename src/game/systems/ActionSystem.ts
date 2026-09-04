@@ -1,12 +1,19 @@
 import { ENEMIES, ITEMS, RECIPES, RESOURCES } from '../data/catalog'
 import type { ItemId } from '../data/types'
+import { audio } from './Audio'
 import { store } from './StateStore'
 
 export type Intent =
   | { type: 'idle' }
-  | { type: 'walk'; path: { x: number; y: number }[]; onArrive?: () => void }
   | { type: 'gather'; objectId: string; resourceId: string; elapsed: number }
-  | { type: 'combat'; objectId: string; enemyId: string; enemyHp: number; playerSwing: number; enemySwing: number }
+  | {
+      type: 'combat'
+      objectId: string
+      enemyId: string
+      enemyHp: number
+      playerSwing: number
+      enemySwing: number
+    }
   | { type: 'bank' }
   | { type: 'station'; station: 'furnace' | 'anvil' }
 
@@ -16,6 +23,7 @@ export class ActionSystem {
   cancel() {
     this.intent = { type: 'idle' }
     store.setActivity(null)
+    audio.stopGatherLoop()
   }
 
   startGather(objectId: string, resourceId: string) {
@@ -33,13 +41,16 @@ export class ActionSystem {
       return
     }
     this.intent = { type: 'gather', objectId, resourceId, elapsed: 0 }
-    store.setActivity(`${resource.skill === 'woodcutting' ? 'Chopping' : 'Mining'} ${resource.name}`)
+    store.setActivity(
+      `${resource.skill === 'woodcutting' ? 'Chopping' : 'Mining'} ${resource.name}`,
+    )
+    audio.startGatherLoop(resource.skill === 'woodcutting' ? 'wood' : 'ore')
   }
 
   tickGather(dt: number): { depleted?: string; gained?: string } | null {
     if (this.intent.type !== 'gather') return null
     if (store.isInventoryFull()) {
-      store.setToast('Your bag is full - visit the bank')
+      store.setToast('Your bag is full — open the bank')
       this.cancel()
       return null
     }
@@ -52,7 +63,7 @@ export class ActionSystem {
 
     this.intent.elapsed = 0
     if (!store.addItem(resource.yields.itemId, resource.yields.amount)) {
-      store.setToast('Your bag is full - visit the bank')
+      store.setToast('Your bag is full — open the bank')
       this.cancel()
       return null
     }
@@ -66,6 +77,7 @@ export class ActionSystem {
 
   startCombat(objectId: string, enemyId: string) {
     const enemy = ENEMIES[enemyId]
+    audio.stopGatherLoop()
     this.intent = {
       type: 'combat',
       objectId,
@@ -93,6 +105,7 @@ export class ActionSystem {
       )
       this.intent.enemyHp -= hit
       if (hit > 0) {
+        audio.hit()
         store.addXp('attack', Math.max(1, hit * 2))
         store.addXp('strength', Math.max(1, hit * 2))
         store.addXp('hitpoints', Math.max(1, Math.floor(hit * 1.2)))
@@ -108,7 +121,7 @@ export class ActionSystem {
         }
       }
       store.addXp('attack', enemy.xp)
-      store.setToast(lootText ? `${enemy.name} defeated - ${lootText}` : `${enemy.name} defeated`)
+      store.setToast(lootText ? `${enemy.name} defeated — ${lootText}` : `${enemy.name} defeated`)
       store.save()
       this.cancel()
       return { enemyDead: true, loot: lootText }
@@ -153,6 +166,7 @@ export class ActionSystem {
     store.addXp('smithing', recipe.xp)
     store.setToast(`Made ${ITEMS[recipe.output.itemId as ItemId].name}`)
     store.save()
+    audio.craft()
     return true
   }
 }
