@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const pages = process.env.GITHUB_PAGES === 'true'
+
 export default defineConfig({
-  base: '/stillwood/',
+  base: pages ? '/stillwood/' : '/',
   server: {
     host: true,
     port: 5173,
@@ -23,8 +25,8 @@ export default defineConfig({
         background_color: '#1e3329',
         display: 'standalone',
         orientation: 'any',
-        start_url: '/stillwood/',
-        scope: '/stillwood/',
+        start_url: pages ? '/stillwood/' : '/',
+        scope: pages ? '/stillwood/' : '/',
         icons: [
           {
             src: 'favicon.svg',
